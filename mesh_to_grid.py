@@ -157,7 +157,7 @@ def push_triangles_with_vertices(grid, vertex_data, i, j, direction, duplicate_l
                     temp_row += step
 
 def pushing_algorithm_with_vertices(grid, vertex_data, duplicate_limit=1):
-    for i in tqdm(range(grid.shape[0])):
+    for i in (range(grid.shape[0])):
         for j in range(grid.shape[1]):
             if grid[i, j] > duplicate_limit:
                 direction = return_push_direction(grid, i, j)
@@ -271,7 +271,7 @@ def process_glb_to_uv_grid(glb_path, grid_size=512, duplicate_limit=1):
     preserved_triangles = np.sum(final_grid > 0)
     preservation_rate = (preserved_triangles / original_triangle_count) * 100
     
-    print(f"Original: {original_triangle_count}, Preserved: {preserved_triangles}, Rate: {preservation_rate:.1f}%")
+    # print(f"Original: {original_triangle_count}, Preserved: {preserved_triangles}, Rate: {preservation_rate:.1f}%")
     
     return final_array, final_grid, final_vertex_data, uv_bounds
 

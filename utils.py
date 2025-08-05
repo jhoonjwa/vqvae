@@ -1,11 +1,12 @@
 import torch
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 import time
 import os
 import numpy as np
 from datasets.file_dataset import FileDataset
+from datasets.glb_dataset import GLBDataset
 
 
 def load_cifar():
@@ -88,7 +89,24 @@ def data_loaders(train_data, val_data, batch_size):
     return train_loader, val_loader
 
 
-def load_data_and_data_loaders(dataset, batch_size, data_path=None):
+def load_glb(glb_dir, val_size=5):
+    """Load GLB dataset and split into train/validation sets."""
+    full_dataset = GLBDataset(glb_dir)
+    
+    # Split dataset into train/validation
+    total_size = len(full_dataset)
+    train_size = total_size - val_size
+    
+    if train_size <= 0:
+        raise ValueError(f"Not enough samples for training. Total: {total_size}, Val size: {val_size}")
+    
+    train_dataset, val_dataset = random_split(full_dataset, [train_size, val_size])
+    
+    print(f"GLB Dataset - Total: {total_size}, Train: {train_size}, Val: {val_size}")
+    
+    return train_dataset, val_dataset
+
+def load_data_and_data_loaders(dataset, batch_size, data_path=None, glb_dir=None, val_size=5):
     if dataset == 'CIFAR10':
         training_data, validation_data = load_cifar()
         training_loader, validation_loader = data_loaders(
@@ -112,9 +130,23 @@ def load_data_and_data_loaders(dataset, batch_size, data_path=None):
         training_loader, validation_loader = data_loaders(
             training_data, validation_data, batch_size)
         x_train_var = np.var(training_data.data)
+    elif dataset == 'GLB':
+        training_data, validation_data = load_glb(glb_dir, val_size)
+        training_loader, validation_loader = data_loaders(
+            training_data, validation_data, batch_size)
+        # For GLB data, we'll compute variance from a sample
+        sample_data = []
+        for i, (x, _) in enumerate(training_loader):
+            sample_data.append(x.numpy())
+            if i >= 5:  # Use first 5 batches to estimate variance
+                break
+        if sample_data:
+            x_train_var = np.var(np.concatenate(sample_data, axis=0))
+        else:
+            x_train_var = 1.0  # fallback
     else:
         raise ValueError(
-            'Invalid dataset: only CIFAR10, BLOCK, LATENT_BLOCK and FILE datasets are supported.')
+            'Invalid dataset: only CIFAR10, BLOCK, LATENT_BLOCK, FILE and GLB datasets are supported.')
 
     return training_data, validation_data, training_loader, validation_loader, x_train_var
 

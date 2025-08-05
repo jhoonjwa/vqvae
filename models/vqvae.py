@@ -48,7 +48,7 @@ class VQVAE(nn.Module):
         # Input: [batch, 9, 512, 512]
         z_e = self.encoder(x)  # [batch, 36, 32, 32]
 
-        z_e = self.pre_quantization_conv(z_e)  # [batch, 36, 32, 32]
+        z_e = self.pre_quantization_conv(z_e)  # [batch, 36, 32, 32]        ## this is for when the dimension of the latent channels and the embedding dims are different. 
         embedding_loss, z_q, perplexity, _, _ = self.vector_quantization(z_e)  # [batch, 36, 32, 32]
         x_hat = self.decoder(z_q)  # [batch, 9, 512, 512]
 
