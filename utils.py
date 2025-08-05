@@ -4,8 +4,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import time
 import os
-from datasets.block import BlockDataset, LatentBlockDataset
 import numpy as np
+from datasets.file_dataset import FileDataset
 
 
 def load_cifar():
@@ -26,6 +26,7 @@ def load_cifar():
 
 
 def load_block():
+    from datasets.block import BlockDataset
     data_folder_path = os.getcwd()
     data_file_path = data_folder_path + \
         '/data/randact_traj_length_100_n_trials_1000_n_contexts_1.npy'
@@ -46,6 +47,7 @@ def load_block():
     return train, val
 
 def load_latent_block():
+    from datasets.block import LatentBlockDataset
     data_folder_path = os.getcwd()
     data_file_path = data_folder_path + \
         '/data/latent_e_indices.npy'
@@ -55,6 +57,21 @@ def load_latent_block():
 
     val = LatentBlockDataset(data_file_path, train=False,
                        transform=None)
+    return train, val
+
+
+def load_file(data_path):
+    """Load a generic dataset stored as a NumPy file."""
+    if data_path is None:
+        raise ValueError('data_path must be provided for FILE dataset')
+    data = np.load(data_path)
+    n = len(data)
+    split = int(0.9 * n)
+    train = FileDataset(data_path)
+    val = FileDataset(data_path)
+    # split datasets without copying large arrays
+    train.data = train.data[:split]
+    val.data = val.data[split:]
     return train, val
 
 
@@ -71,12 +88,12 @@ def data_loaders(train_data, val_data, batch_size):
     return train_loader, val_loader
 
 
-def load_data_and_data_loaders(dataset, batch_size):
+def load_data_and_data_loaders(dataset, batch_size, data_path=None):
     if dataset == 'CIFAR10':
         training_data, validation_data = load_cifar()
         training_loader, validation_loader = data_loaders(
             training_data, validation_data, batch_size)
-        x_train_var = np.var(training_data.train_data / 255.0)
+        x_train_var = np.var(training_data.data / 255.0)
 
     elif dataset == 'BLOCK':
         training_data, validation_data = load_block()
@@ -90,10 +107,14 @@ def load_data_and_data_loaders(dataset, batch_size):
             training_data, validation_data, batch_size)
 
         x_train_var = np.var(training_data.data)
-
+    elif dataset == 'FILE':
+        training_data, validation_data = load_file(data_path)
+        training_loader, validation_loader = data_loaders(
+            training_data, validation_data, batch_size)
+        x_train_var = np.var(training_data.data)
     else:
         raise ValueError(
-            'Invalid dataset: only CIFAR10 and BLOCK datasets are supported.')
+            'Invalid dataset: only CIFAR10, BLOCK, LATENT_BLOCK and FILE datasets are supported.')
 
     return training_data, validation_data, training_loader, validation_loader, x_train_var
 
